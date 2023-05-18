@@ -1,0 +1,162 @@
+---
+title: "Delitos Costa Rica"
+author: "Wagner Chacón Ulate"
+format: 
+ html: 
+  toc: true
+editor: visual
+---
+
+## introducción: 
+
+Esta es una pagina web creada para el curso GF 0604, que pretende crear un análisis de datos a través de un gráfico de pastel. En este caso, se usan los datos de delitos cometidos en Costa rica en 2022, extraídos del Ministerio de Seguridad. 
+
+
+En un “trabajo invisible”, para crear un gráfico de cualquier tipo, hay que cargar varios paquetes y librería, especiales para este uso. Usaremos dos:  
+
+- Plodly 
+- tidyverse
+- DT
+
+```{r}
+#| label: libreria 1 
+#| include: true 
+#| echo: false
+#| warning: false
+
+  library(plotly)
+```
+
+```{r}
+#| label: libreria 2
+#| include: true
+#| echo: false 
+#| warning: false
+
+library(tidyverse)
+```
+
+```{r}
+#| echo: false
+2 * 2
+```
+
+```{r}
+#| label: libreria 3 
+#| include: true
+#| echo: false
+#| warning: false
+
+library(DT)
+```
+
+## Obtención de datos de delitos de Costa Rica
+
+Se carga una lista de estos delitos en dataframe, para una mejor comprensión y manejo de los datos.
+
+```{r}
+#| label: delitos CR 
+#| include: true
+#| echo: false 
+#| warning: false
+
+delitos_2022 <-
+  read_delim(
+    file = "https://raw.githubusercontent.com/gf0604-procesamientodatosgeograficos/2023-i/main/datos/oij/estadisticas-policiales/estadisticaspoliciales2022.csv"
+  )
+```
+
+## Tabla de datos:
+
+En esta tabla, se muestran los delitos del dataframe. Se pueden cambiar la cantidad de datos a mostrar y tiene una barra de busqueda para un uso sencillo.
+
+```{r}
+#| label: Tabla delitos CR 
+#| include: true
+#| echo: ffalse 
+#| warning: false
+
+delitos_2022 |>
+  datatable(
+    options = list(
+      pageLength = 15,
+      language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json')
+    )
+)
+```
+
+Pero, si lo que necesitamos es una tabla por prrovincia, podemos crearla y usarla. Esta no se ve, asi que creamos un dataframe para que sea interpretada. Cambiamos algunos nombres de las columnas del nuevo dataframe y con eso trabajamos apartir de aqui.
+
+```{r}
+#| label: tabla provincias 
+#| include: true
+#| echo: false 
+
+tabla_frecuencias_delitos_2022_provincias <- table(delitos_2022$Provincia)
+```
+
+```{r}
+#| label: dtf delitos provincias
+#| include: true
+#| echo: false 
+#| warning: false
+
+delitos_2022_provincias <- as.data.frame(tabla_frecuencias_delitos_2022_provincias)
+```
+
+```{r}
+#| label: columnas
+#| include: true 
+#| echo: false 
+#| warning: false
+
+delitos_2022_provincias <-
+  delitos_2022_provincias |>
+  rename(Provincia = Var1, Frecuencia = Freq)
+```
+
+## Porcentajes de delitos por provincia.
+
+En el dataframe, no vienen calculados los porcentajes de delitos ocurridos en las siete provincia. Para ello, se calcula este porcentaje.
+
+```{r}
+#| label: calculo 
+#| include: true 
+#| echo: true
+#| warning: false
+
+delitos_2022_provincias$Porcentaje <-
+  100 * delitos_2022_provincias$Frecuencia / sum(delitos_2022_provincias$Frecuencia)
+```
+
+```{r}
+#| label: grafico 
+#| include: true
+#| echo: false 
+#| warning: false
+
+grafico_pastel_ggplot2 <-
+  delitos_2022_provincias |>
+  ggplot(aes(x = "", y = Porcentaje, fill = Provincia)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y", start = 0) +
+  theme_void() +
+  labs(title = "Porcentaje de delitos cometidos en 2022 por provincia",
+    subtitle = "Fuente: OIJ") +
+  scale_fill_discrete(name = "Provincia") +
+  geom_text(
+    aes(label = paste0(round(Porcentaje, 1), "%")),
+    position = position_stack(vjust = 0.5),
+    color = "black",
+    size = 5
+  ) 
+```
+
+```{r}
+#| label: despliegue
+#| include: true
+#| echo: false 
+#| warning: false
+
+  grafico_pastel_ggplot2
+```
